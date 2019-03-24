@@ -139,7 +139,6 @@ public class BalanceActivity extends AppCompatActivity {
     private CollapsingToolbarLayout mCollapsingToolbar;
     private CompositeDisposable compositeDisposable = new CompositeDisposable();
     private Toolbar toolbar;
-    private Menu menu;
     private ImageView menuTorIcon;
     private ProgressBar progressBarMenu;
 
@@ -458,12 +457,7 @@ public class BalanceActivity extends AppCompatActivity {
             setBalance(balanceViewModel.getBalance().getValue(), state);
             adapter.toggleDisplayUnit(state);
         });
-        balanceViewModel.getTxs().observe(this, new Observer<List<Tx>>() {
-            @Override
-            public void onChanged(@Nullable List<Tx> list) {
-                adapter.setTxes(list);
-            }
-        });
+        balanceViewModel.getTxs().observe(this, adapter::setTxes);
         mCollapsingToolbar.setOnClickListener(view -> balanceViewModel.toggleSat());
 
     }
@@ -572,7 +566,6 @@ public class BalanceActivity extends AppCompatActivity {
         menu.findItem(R.id.action_sign).setVisible(false);
         menu.findItem(R.id.action_fees).setVisible(false);
         menu.findItem(R.id.action_batch).setVisible(false);
-        this.menu = menu;
 
         return super.onCreateOptionsMenu(menu);
     }
@@ -828,9 +821,6 @@ public class BalanceActivity extends AppCompatActivity {
         if (txs != null) {
             Collections.sort(txs, new APIFactory.TxMostRecentDateComparator());
         }
-
-//        displayBalance();
-//        txAdapter.notifyDataSetChanged();
 
 
     }
