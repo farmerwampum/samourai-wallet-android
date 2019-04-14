@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.security.SecureRandom;
 import java.security.SignatureException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -16,6 +18,7 @@ import java.util.NoSuchElementException;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -53,6 +56,7 @@ import com.github.mjdev.libaums.fs.FileSystem;
 import com.github.mjdev.libaums.fs.FileSystemFactory;
 import com.github.mjdev.libaums.fs.UsbFile;
 import com.github.mjdev.libaums.fs.UsbFileInputStream;
+import com.github.mjdev.libaums.fs.UsbFileOutputStream;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.google.zxing.client.android.Contents;
@@ -184,15 +188,18 @@ public class OpenDimeActivity extends Activity {
         btSweep = (Button)findViewById(R.id.sweep);
 
         btTopUp.setVisibility(View.GONE);
-/*
+
         btTopUp = (Button)findViewById(R.id.topup);
         btTopUp.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-
-
+                if(strAddress != null)    {
+                    Intent intent = new Intent(OpenDimeActivity.this, SendActivity.class);
+                    intent.putExtra("uri", strAddress);
+                    startActivity(intent);
+                }
             }
         });
-*/
+
         btView = (Button)findViewById(R.id.view);
         btView.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -607,7 +614,7 @@ public class OpenDimeActivity extends Activity {
 //                                    Toast.makeText(OpenDimeActivity.this, "spendable|consultable", Toast.LENGTH_LONG).show();
                                     tvAddress.setText(strAddress);
                                     btSweep.setVisibility(View.VISIBLE);
-//                                    btTopUp.setVisibility(View.VISIBLE);
+                                    btTopUp.setVisibility(View.GONE);
                                     btView.setVisibility(View.VISIBLE);
                                 }
                             });
@@ -618,7 +625,7 @@ public class OpenDimeActivity extends Activity {
 //                                    Toast.makeText(OpenDimeActivity.this, "not spendable|consultable", Toast.LENGTH_LONG).show();
                                     tvAddress.setText(strAddress);
                                     btSweep.setVisibility(View.GONE);
-//                                    btTopUp.setVisibility(View.VISIBLE);
+                                    btTopUp.setVisibility(View.VISIBLE);
                                     btView.setVisibility(View.VISIBLE);
                                 }
                             });
@@ -629,7 +636,7 @@ public class OpenDimeActivity extends Activity {
 //                                    Toast.makeText(OpenDimeActivity.this, "consultable", Toast.LENGTH_LONG).show();
                                     tvAddress.setText(strAddress);
                                     btSweep.setVisibility(View.GONE);
-//                                    btTopUp.setVisibility(View.VISIBLE);
+                                    btTopUp.setVisibility(View.VISIBLE);
                                     btView.setVisibility(View.VISIBLE);
                                 }
                             });
@@ -637,12 +644,47 @@ public class OpenDimeActivity extends Activity {
                         else    {
                             handler.post(new Runnable() {
                                 public void run() {
-                                    Toast.makeText(OpenDimeActivity.this, "not initialised", Toast.LENGTH_LONG).show();
                                     btSweep.setVisibility(View.GONE);
-//                                    btTopUp.setVisibility(View.GONE);
+                                    btTopUp.setVisibility(View.GONE);
                                     btView.setVisibility(View.GONE);
                                 }
                             });
+
+                            AlertDialog.Builder alert = new AlertDialog.Builder(OpenDimeActivity.this);
+                            alert.setTitle("Opendime not initialized");
+                            alert.setMessage("Initialize? Will take around 1 minute");
+                            alert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                    try {
+                                        for (int i = 0; i < 1000; i++) {
+                                            UsbFile file = currentDir.createFile("random"+i+".txt");
+                                            OutputStream os = new UsbFileOutputStream(file);
+
+                                            SecureRandom random = new SecureRandom();
+                                            byte bytes[] = new byte[257];
+                                            random.nextBytes(bytes);
+
+                                            os.write(bytes);
+                                            os.close();
+                                        }
+                                    } catch (Throwable e) {
+                                        Toast.makeText(OpenDimeActivity.this, "failed"+e, Toast.LENGTH_LONG).show();
+                                    }
+                                    Toast.makeText(OpenDimeActivity.this, "finished", Toast.LENGTH_LONG).show();
+                                   // pd.hide();
+                                }
+                            }).setNegativeButton("No", new DialogInterface.OnClickListener() {
+
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                }
+                            });
+
+                            alert.show();
                         }
 
                         if(hasValidatedSignedMessage() && hasPublicAddress())    {
